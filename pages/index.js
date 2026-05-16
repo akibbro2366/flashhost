@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Head from "next/head";
+import QRCode from "qrcode";
 
 export default function Home() {
   const [html, setHtml] = useState("");
@@ -7,6 +8,7 @@ export default function Home() {
   const [customSlug, setCustomSlug] = useState("");
   const [deploying, setDeploying] = useState(false);
   const [result, setResult] = useState(null);
+  const [qrDataUrl, setQrDataUrl] = useState("");
   const [recentSites, setRecentSites] = useState([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const [fileName, setFileName] = useState("");
@@ -71,6 +73,24 @@ export default function Home() {
     [handleFile]
   );
 
+  const generateQR = async (url) => {
+    try {
+      const fullUrl = window.location.origin + url;
+      const dataUrl = await QRCode.toDataURL(fullUrl, {
+        width: 280,
+        margin: 2,
+        color: {
+          dark: "#e8e8ec",
+          light: "#00000000",
+        },
+        errorCorrectionLevel: "M",
+      });
+      setQrDataUrl(dataUrl);
+    } catch (err) {
+      console.error("QR generation failed:", err);
+    }
+  };
+
   const handleDeploy = async () => {
     if (fileType === "zip") {
       if (!html) return;
@@ -80,6 +100,7 @@ export default function Home() {
 
     setDeploying(true);
     setResult(null);
+    setQrDataUrl("");
 
     try {
       const body = {
@@ -101,6 +122,7 @@ export default function Home() {
       const data = await res.json();
       if (res.ok) {
         setResult(data);
+        generateQR(data.url);
         setHtml("");
         setTitle("");
         setCustomSlug("");
@@ -127,8 +149,17 @@ export default function Home() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownloadQR = () => {
+    if (!qrDataUrl) return;
+    const link = document.createElement("a");
+    link.download = `flashhost-${result?.slug || "qr"}.png`;
+    link.href = qrDataUrl;
+    link.click();
+  };
+
   const canDeploy =
-    (fileType === "zip" ? html.length > 0 : html.trim().length > 0) && !deploying;
+    (fileType === "zip" ? html.length > 0 : html.trim().length > 0) &&
+    !deploying;
 
   return (
     <>
@@ -188,23 +219,24 @@ export default function Home() {
             {fileName ? (
               <>
                 <div className="drop-icon">
-                  {fileType === "zip" ? "📦" : "📄"}
+                  {fileType === "zip" ? "\u{1F4E6}" : "\u{1F4C4}"}
                 </div>
                 <div className="drop-text file-loaded">{fileName}</div>
                 <div className="drop-hint">
                   {fileType === "zip"
-                    ? "ZIP loaded — full website ready to deploy"
-                    : "File loaded — ready to deploy"}
+                    ? "ZIP loaded \u2014 full website ready to deploy"
+                    : "File loaded \u2014 ready to deploy"}
                 </div>
               </>
             ) : (
               <>
-                <div className="drop-icon">☁️</div>
+                <div className="drop-icon">{"\u2601\uFE0F"}</div>
                 <div className="drop-text">
                   Drop your HTML or ZIP file here
                 </div>
                 <div className="drop-hint">
-                  or click to browse · HTML max 1 MB · ZIP max 5 MB
+                  or click to browse {"\u00B7"} HTML max 1 MB {"\u00B7"} ZIP max
+                  5 MB
                 </div>
               </>
             )}
@@ -215,7 +247,7 @@ export default function Home() {
           <textarea
             className="code-textarea"
             placeholder={
-              '<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Hello, world!</h1>\n  </body>\n</html>'
+              "<!DOCTYPE html>\n<html>\n  <body>\n    <h1>Hello, world!</h1>\n  </body>\n</html>"
             }
             value={fileType === "zip" ? "" : html}
             onChange={(e) => {
@@ -290,13 +322,13 @@ export default function Home() {
             onClick={handleDeploy}
             disabled={!canDeploy}
           >
-            {deploying ? "Deploying..." : "Deploy →"}
+            {deploying ? "Deploying..." : "Deploy \u2192"}
           </button>
 
           {result && (
             <div className="result">
               <div className="result-header">
-                <span>&#10003;</span> Your site is live
+                <span>{"\u2713"}</span> Your site is live
                 {result.type === "zip" && (
                   <span
                     style={{
@@ -319,12 +351,25 @@ export default function Home() {
                   {result.url}
                 </code>
               </div>
+
+              {qrDataUrl && (
+                <div className="qr-container">
+                  <img src={qrDataUrl} alt="QR Code" className="qr-image" />
+                  <button
+                    className="btn-secondary qr-download"
+                    onClick={handleDownloadQR}
+                  >
+                    Download QR
+                  </button>
+                </div>
+              )}
+
               <div className="result-actions">
                 <button
                   className={`btn-secondary ${copied ? "copied" : ""}`}
                   onClick={handleCopy}
                 >
-                  {copied ? "✓ Copied" : "Copy URL"}
+                  {copied ? "\u2713 Copied" : "Copy URL"}
                 </button>
                 <a
                   className="btn-secondary"
@@ -332,7 +377,7 @@ export default function Home() {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Open site ↗
+                  Open site {"\u2197"}
                 </a>
               </div>
             </div>
