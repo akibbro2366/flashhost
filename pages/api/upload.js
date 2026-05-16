@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { html, title } = req.body;
+  const { html, title, customSlug } = req.body;
 
   if (!html || typeof html !== "string" || html.trim().length === 0) {
     return res.status(400).json({ error: "HTML content is required." });
@@ -16,7 +16,39 @@ export default async function handler(req, res) {
     return res.status(413).json({ error: "Content too large (max 1 MB)." });
   }
 
-  const slug = nanoid(8);
+  let slug;
+
+  if (customSlug && customSlug.trim().length > 0) {
+    const cleaned = customSlug
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 32);
+
+    if (cleaned.length < 2) {
+      return res.status(400).json({
+        error: "Custom URL must be at least 2 characters (letters, numbers, dashes).",
+      });
+    }
+
+    const { data: existing } = await supabase
+      .from("sites")
+      .select("slug")
+      .eq("slug", cleaned)
+      .single();
+
+    if (existing) {
+      return res.status(409).json({
+        error: `The URL /s/${cleaned} is already taken. Try another.`,
+      });
+    }
+
+    slug = cleaned;
+  } else {
+    slug = nanoid(8);
+  }
 
   const { data, error } = await supabase
     .from("sites")
