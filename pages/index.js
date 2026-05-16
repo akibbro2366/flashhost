@@ -4,6 +4,7 @@ import Head from "next/head";
 export default function Home() {
   const [html, setHtml] = useState("");
   const [title, setTitle] = useState("");
+  const [customSlug, setCustomSlug] = useState("");
   const [deploying, setDeploying] = useState(false);
   const [result, setResult] = useState(null);
   const [recentSites, setRecentSites] = useState([]);
@@ -56,13 +57,18 @@ export default function Home() {
       const res = await fetch("/api/upload", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ html, title: title || "Untitled" }),
+        body: JSON.stringify({
+          html,
+          title: title || "Untitled",
+          customSlug: customSlug.trim(),
+        }),
       });
       const data = await res.json();
       if (res.ok) {
         setResult(data);
         setHtml("");
         setTitle("");
+        setCustomSlug("");
         setFileName("");
         const sitesRes = await fetch("/api/sites");
         const sites = await sitesRes.json();
@@ -144,9 +150,48 @@ export default function Home() {
             rows={10}
           />
 
-          <input className="title-input" type="text" placeholder="Site title (optional)" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input
+            className="title-input"
+            type="text"
+            placeholder="Site title (optional)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+          />
 
-          <button className={`deploy-btn ${deploying ? "loading" : ""}`} onClick={handleDeploy} disabled={!canDeploy}>
+          <div style={{ position: "relative", marginTop: "16px" }}>
+            <input
+              className="title-input"
+              type="text"
+              placeholder="Custom URL (optional) e.g. myportfolio"
+              value={customSlug}
+              onChange={(e) => {
+                const val = e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, "");
+                setCustomSlug(val);
+              }}
+              style={{ marginTop: 0, paddingLeft: "130px" }}
+            />
+            <span
+              style={{
+                position: "absolute",
+                left: "20px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "var(--text-muted)",
+                fontSize: "0.82rem",
+                fontFamily: "'DM Mono', monospace",
+                pointerEvents: "none",
+                userSelect: "none",
+              }}
+            >
+              /s/
+            </span>
+          </div>
+
+          <button
+            className={`deploy-btn ${deploying ? "loading" : ""}`}
+            onClick={handleDeploy}
+            disabled={!canDeploy}
+          >
             {deploying ? "Deploying..." : "Deploy →"}
           </button>
 
