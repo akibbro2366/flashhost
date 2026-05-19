@@ -311,6 +311,19 @@ export default function Admin() {
                           e.target.style.background = "rgba(255, 60, 60, 0.25)";
                         }}
                         onMouseOut={(e) => {
-
-
-Server is busy. Wait a minute or two and try again.
+                          e.target.style.background = "rgba(255, 60, 60, 0.1)";
+                        }}
+                      >
+                        {deleting === item.slug ? "Deleting..." : "Delete"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
+      </div>
+    </>
+  );
+}
